@@ -5,26 +5,26 @@
   },
   "data": [
     {
-      "name": "Lạc Cà Truyện",
+      "name": "La Cà Truyện",
       "author": "Khoi3004",
       "path": "https://raw.githubusercontent.com/Khoi3004/vbook-extensions/main/lacatruyen/plugin.zip",
-      "version": 1,
-      "source": "https://lacatruyen.com",
+      "version": 2,
+      "source": "https://lacatruyen.email",
       "icon": "https://raw.githubusercontent.com/Khoi3004/vbook-extensions/main/lacatruyen/icon.png",
-      "description": "Đọc truyện trên Lạc Cà Truyện",
+      "description": "Đọc truyện chữ online trên La Cà Truyện (lacatruyen.email)",
       "type": "novel",
-      "locale": "vi_VN"
+      "locale": "vi"
     },
     {
       "name": "TopTruyen",
       "author": "Khoi3004",
       "path": "https://raw.githubusercontent.com/Khoi3004/vbook-extensions/main/toptruyen/plugin.zip",
-      "version": 4,
+      "version": 5,
       "source": "https://www.toptruyenzone15.com",
       "icon": "https://raw.githubusercontent.com/Khoi3004/vbook-extensions/main/toptruyen/icon.png",
       "description": "Đọc truyện tranh trên TopTruyen (hỗ trợ đổi domain & tự động đăng nhập)",
       "type": "comic",
-      "locale": "vi_VN"
+      "locale": "vi"
     }
   ]
 }

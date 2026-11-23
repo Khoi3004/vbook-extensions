@@ -1,6 +1,46 @@
 function execute() {
     return Response.success([
         {
+            id: "quick_nav",
+            title: "Danh mục nhanh",
+            subtitle: "",
+            type: "chip",
+            items: [
+                {
+                    name: "Mới cập nhật",
+                    action: { type: "list", name: "Mới cập nhật", script: "gen.js", input: "updated" }
+                },
+                {
+                    name: "Miễn phí",
+                    action: { type: "list", name: "Truyện miễn phí", script: "gen.js", input: "free" }
+                },
+                {
+                    name: "Hoàn thành",
+                    action: { type: "list", name: "Đã hoàn thành", script: "gen.js", input: "completed" }
+                },
+                {
+                    name: "Top ngày",
+                    action: { type: "list", name: "Đọc nhiều trong ngày", script: "gen.js", input: "top_day" }
+                },
+                {
+                    name: "Top tuần",
+                    action: { type: "list", name: "Đọc nhiều trong tuần", script: "gen.js", input: "top_week" }
+                },
+                {
+                    name: "Thịnh hành tháng",
+                    action: { type: "list", name: "Thịnh hành tháng", script: "gen.js", input: "trending" }
+                },
+                {
+                    name: "Đề cử biên tập",
+                    action: { type: "list", name: "Đề cử biên tập", script: "gen.js", input: "editor_gems" }
+                },
+                {
+                    name: "Đang lên",
+                    action: { type: "list", name: "Ngôi sao đang lên", script: "gen.js", input: "rising" }
+                }
+            ]
+        },
+        {
             id: "banner",
             title: "",
             subtitle: "",
