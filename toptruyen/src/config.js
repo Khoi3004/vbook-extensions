@@ -149,6 +149,7 @@ function ensureLogin(force) {
     }
 
     var loginUrl = BASE_URL + "/login";
+    console.log("GET " + loginUrl);
     var pageRes = fetch(loginUrl, {
         headers: getHeaders(BASE_URL + "/"),
         timeout: 30000
@@ -185,6 +186,7 @@ function ensureLogin(force) {
         "&password=" + encodeURIComponent(USER_PASSWORD) +
         "&remember=1";
 
+    console.log("POST " + postUrl + " (tokenLen=" + csrfToken.length + ", email=" + USER_EMAIL + ")");
     var postRes = fetch(postUrl, {
         method: "POST",
         headers: postHeaders,
@@ -194,18 +196,21 @@ function ensureLogin(force) {
     if (!postRes) {
         return { ok: false, message: "Không nhận được phản hồi khi đăng nhập" };
     }
+    console.log("POST status=" + postRes.status + ", finalUrl=" + String(postRes.url || ""));
 
     var postErr = "";
     if (postRes.ok) {
         try {
             var postDoc = postRes.html();
-            var errEl = postDoc.select(".alert-danger, .invalid-feedback, .help-block strong").first();
+            var errEl = postDoc.select(".login-box-body .text-danger, form .text-danger, .alert-danger, .invalid-feedback, .help-block strong").first();
             if (errEl) postErr = trimText(errEl.text());
         } catch (e) {}
     }
 
     var landedOutsideLogin = postRes.url && postRes.url.indexOf("/login") === -1;
-    if ((postRes.ok && landedOutsideLogin && !postErr) || checkLoggedIn()) {
+    var headerOk = checkLoggedIn();
+    console.log("landedOutsideLogin=" + landedOutsideLogin + ", headerOk=" + headerOk + (postErr ? (", err=" + postErr) : ""));
+    if ((postRes.ok && landedOutsideLogin && !postErr) || headerOk) {
         setLoginCache();
         return { ok: true, message: "Đăng nhập thành công (" + USER_EMAIL + ")" };
     }

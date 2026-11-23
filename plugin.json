@@ -19,7 +19,7 @@
       "name": "TopTruyen",
       "author": "Khoi3004",
       "path": "https://raw.githubusercontent.com/Khoi3004/vbook-extensions/main/toptruyen/plugin.zip",
-      "version": 1,
+      "version": 2,
       "source": "https://www.toptruyenzone15.com",
       "icon": "https://raw.githubusercontent.com/Khoi3004/vbook-extensions/main/toptruyen/icon.png",
       "description": "Đọc truyện tranh trên TopTruyen (hỗ trợ đổi domain & tự động đăng nhập)",
