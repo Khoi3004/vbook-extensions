@@ -119,6 +119,35 @@ function clearLoginCache() {
     } catch (e) {}
 }
 
+function getCookieNames() {
+    try {
+        if (typeof localCookie === "undefined") return "n/a";
+        var raw = String(localCookie.getCookie() || "");
+        if (!raw) return "empty";
+        var parts = raw.split(";");
+        var names = [];
+        var i;
+        for (i = 0; i < parts.length; i++) {
+            var kv = trimText(parts[i]);
+            var eq = kv.indexOf("=");
+            if (eq > 0) names.push(kv.slice(0, eq));
+        }
+        return names.join(",");
+    } catch (e) {
+        return "err";
+    }
+}
+
+function syncCookieFromRes(res) {
+    try {
+        if (!res || typeof localCookie === "undefined") return;
+        var sc = res.header("set-cookie");
+        if (sc) {
+            localCookie.setCookie(sc);
+        }
+    } catch (e) {}
+}
+
 function checkLoggedIn() {
     var res = fetch(BASE_URL + "/header-login", {
         headers: getHeaders(BASE_URL + "/"),
@@ -157,6 +186,7 @@ function ensureLogin(force) {
     if (!pageRes || !pageRes.ok) {
         return { ok: false, message: "Không tải được trang đăng nhập (HTTP " + (pageRes ? pageRes.status : 0) + ")" };
     }
+    syncCookieFromRes(pageRes);
 
     if (pageRes.url && pageRes.url.indexOf("/login") === -1) {
         setLoginCache();
@@ -186,7 +216,7 @@ function ensureLogin(force) {
         "&password=" + encodeURIComponent(USER_PASSWORD) +
         "&remember=1";
 
-    console.log("POST " + postUrl + " (tokenLen=" + csrfToken.length + ", email=" + USER_EMAIL + ")");
+    console.log("POST " + postUrl + " (tokenLen=" + csrfToken.length + ", cookies=" + getCookieNames() + ")");
     var postRes = fetch(postUrl, {
         method: "POST",
         headers: postHeaders,
@@ -196,20 +226,61 @@ function ensureLogin(force) {
     if (!postRes) {
         return { ok: false, message: "Không nhận được phản hồi khi đăng nhập" };
     }
-    console.log("POST status=" + postRes.status + ", finalUrl=" + String(postRes.url || ""));
+    syncCookieFromRes(postRes);
 
+    var postTitle = "";
     var postErr = "";
+    var hasLoginForm = false;
     if (postRes.ok) {
         try {
             var postDoc = postRes.html();
-            var errEl = postDoc.select(".login-box-body .text-danger, form .text-danger, .alert-danger, .invalid-feedback, .help-block strong").first();
+            postTitle = trimText(postDoc.select("title").text());
+            hasLoginForm = !postDoc.select("form input[name=\"password\"]").isEmpty();
+            var errEl = postDoc.select(".login-box-body .text-danger, form .text-danger, .text-danger, .alert-danger, .invalid-feedback, .help-block strong").first();
             if (errEl) postErr = trimText(errEl.text());
         } catch (e) {}
     }
 
-    var landedOutsideLogin = postRes.url && postRes.url.indexOf("/login") === -1;
+    console.log("POST status=" + postRes.status + ", finalUrl=" + String(postRes.url || "") + ", hasLoginForm=" + hasLoginForm + ", title=" + postTitle.slice(0, 40));
+    console.log("afterPOST cookies=" + getCookieNames() + (postErr ? (", err=" + postErr) : ""));
+
+    // Fallback: if string body didn't submit (still on login form with no error), retry with object body
+    if (postRes.ok && hasLoginForm && !postErr) {
+        var objHeaders = getHeaders(postUrl);
+        objHeaders["Origin"] = postOrigin;
+        console.log("Retry POST with object body...");
+        var retryRes = fetch(postUrl, {
+            method: "POST",
+            headers: objHeaders,
+            body: {
+                _token: csrfToken,
+                email: USER_EMAIL,
+                password: USER_PASSWORD,
+                remember: "1"
+            },
+            timeout: 30000
+        });
+        if (retryRes) {
+            postRes = retryRes;
+            syncCookieFromRes(postRes);
+            hasLoginForm = false;
+            postErr = "";
+            if (postRes.ok) {
+                try {
+                    var rDoc = postRes.html();
+                    postTitle = trimText(rDoc.select("title").text());
+                    hasLoginForm = !rDoc.select("form input[name=\"password\"]").isEmpty();
+                    var rErr = rDoc.select(".login-box-body .text-danger, form .text-danger, .text-danger, .alert-danger").first();
+                    if (rErr) postErr = trimText(rErr.text());
+                } catch (e) {}
+            }
+            console.log("Retry status=" + postRes.status + ", finalUrl=" + String(postRes.url || "") + ", hasLoginForm=" + hasLoginForm + (postErr ? (", err=" + postErr) : ""));
+        }
+    }
+
+    var landedOutsideLogin = (postRes.url && postRes.url.indexOf("/login") === -1) || (postRes.ok && !hasLoginForm);
     var headerOk = checkLoggedIn();
-    console.log("landedOutsideLogin=" + landedOutsideLogin + ", headerOk=" + headerOk + (postErr ? (", err=" + postErr) : ""));
+    console.log("landedOutsideLogin=" + landedOutsideLogin + ", headerOk=" + headerOk);
     if ((postRes.ok && landedOutsideLogin && !postErr) || headerOk) {
         setLoginCache();
         return { ok: true, message: "Đăng nhập thành công (" + USER_EMAIL + ")" };
@@ -218,7 +289,7 @@ function ensureLogin(force) {
     clearLoginCache();
     return {
         ok: false,
-        message: postErr || ("Đăng nhập thất bại (HTTP " + postRes.status + ", url=" + String(postRes.url || "") + ")")
+        message: postErr || ("Đăng nhập thất bại (HTTP " + postRes.status + ", hasLoginForm=" + hasLoginForm + ", cookies=" + getCookieNames() + ")")
     };
 }
 
