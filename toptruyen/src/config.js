@@ -160,6 +160,91 @@ function checkLoggedIn() {
     return body.indexOf("btn-login") === -1 && body.indexOf("/login\"") === -1 && body.indexOf("/login'") === -1;
 }
 
+function loginViaBrowser() {
+    if (typeof Engine === "undefined" || !Engine || typeof Engine.newBrowser !== "function") {
+        return null;
+    }
+    var browser = null;
+    try {
+        browser = Engine.newBrowser();
+        var loginUrl = BASE_URL + "/login";
+        console.log("[Browser] Mở " + loginUrl);
+        var doc = browser.launch(loginUrl, 15000);
+
+        if (doc && doc.select("form input[name=\"password\"]").isEmpty()) {
+            console.log("[Browser] Đã đăng nhập sẵn trên WebView");
+            browser.close();
+            browser = null;
+            if (checkLoggedIn()) {
+                setLoginCache();
+                return { ok: true, message: "Đã đăng nhập sẵn (" + USER_EMAIL + ")" };
+            }
+        }
+
+        if (!browser) {
+            browser = Engine.newBrowser();
+            browser.launch(loginUrl, 15000);
+        }
+
+        var submitJs = "(function(){" +
+            "var p=document.querySelector('form input[name=\"password\"]');" +
+            "if(!p)return 'no_form';" +
+            "var form=p.form||document.querySelector('form');" +
+            "var e=form?form.querySelector('input[name=\"email\"]'):null;" +
+            "var r=form?form.querySelector('input[name=\"remember\"]'):null;" +
+            "if(e)e.value=" + JSON.stringify(USER_EMAIL) + ";" +
+            "p.value=" + JSON.stringify(USER_PASSWORD) + ";" +
+            "if(r)r.checked=true;" +
+            "if(form){form.submit();return 'submitted';}" +
+            "return 'no_form';" +
+        "})()";
+
+        var submitRes = trimText(browser.callJs(submitJs, 5000).text());
+        console.log("[Browser] submit=" + submitRes);
+        if (submitRes !== "submitted") {
+            browser.close();
+            return { ok: false, message: "Không tìm thấy form đăng nhập trong WebView (" + submitRes + ")" };
+        }
+
+        var afterDoc = browser.html(5000);
+        var afterTitle = afterDoc ? trimText(afterDoc.select("title").text()) : "";
+        var stillOnLogin = afterDoc ? !afterDoc.select("form input[name=\"password\"]").isEmpty() : false;
+        var errText = "";
+        if (afterDoc && stillOnLogin) {
+            var errEl = afterDoc.select(".login-box-body .text-danger, form .text-danger, .text-danger, .alert-danger").first();
+            if (errEl) errText = trimText(errEl.text());
+        }
+
+        console.log("[Browser] afterTitle=" + afterTitle.slice(0, 40) + ", stillOnLogin=" + stillOnLogin + ", cookies=" + getCookieNames());
+        browser.close();
+        browser = null;
+
+        if (stillOnLogin && errText) {
+            clearLoginCache();
+            return { ok: false, message: errText };
+        }
+
+        var headerOk = checkLoggedIn();
+        console.log("[Browser] headerOk=" + headerOk + ", cookies=" + getCookieNames());
+        if (headerOk || !stillOnLogin) {
+            setLoginCache();
+            return {
+                ok: true,
+                message: "Đăng nhập thành công qua WebView (" + USER_EMAIL + ", headerOk=" + headerOk + ")"
+            };
+        }
+
+        clearLoginCache();
+        return { ok: false, message: "Đăng nhập WebView chưa lưu phiên (cookies=" + getCookieNames() + ")" };
+    } catch (e) {
+        try {
+            if (browser) browser.close();
+        } catch (ce) {}
+        console.log("[Browser] lỗi: " + e);
+        return null;
+    }
+}
+
 function ensureLogin(force) {
     if (!USER_EMAIL || !USER_PASSWORD) {
         return { ok: false, skipped: true, message: "Chưa cấu hình Email và Mật khẩu trong cài đặt tiện ích" };
@@ -175,6 +260,12 @@ function ensureLogin(force) {
                 return { ok: true, cached: true, message: "Đã có phiên đăng nhập" };
             }
         }
+    }
+
+    // Prefer Headless WebView login so Android CookieManager persists remember_web_* for both app browser and fetch()
+    var browserResult = loginViaBrowser();
+    if (browserResult !== null) {
+        return browserResult;
     }
 
     var loginUrl = BASE_URL + "/login";
@@ -228,60 +319,18 @@ function ensureLogin(force) {
     }
     syncCookieFromRes(postRes);
 
-    var postTitle = "";
     var postErr = "";
-    var hasLoginForm = false;
     if (postRes.ok) {
         try {
             var postDoc = postRes.html();
-            postTitle = trimText(postDoc.select("title").text());
-            hasLoginForm = !postDoc.select("form input[name=\"password\"]").isEmpty();
             var errEl = postDoc.select(".login-box-body .text-danger, form .text-danger, .text-danger, .alert-danger, .invalid-feedback, .help-block strong").first();
             if (errEl) postErr = trimText(errEl.text());
         } catch (e) {}
     }
 
-    console.log("POST status=" + postRes.status + ", finalUrl=" + String(postRes.url || "") + ", hasLoginForm=" + hasLoginForm + ", title=" + postTitle.slice(0, 40));
-    console.log("afterPOST cookies=" + getCookieNames() + (postErr ? (", err=" + postErr) : ""));
-
-    // Fallback: if string body didn't submit (still on login form with no error), retry with object body
-    if (postRes.ok && hasLoginForm && !postErr) {
-        var objHeaders = getHeaders(postUrl);
-        objHeaders["Origin"] = postOrigin;
-        console.log("Retry POST with object body...");
-        var retryRes = fetch(postUrl, {
-            method: "POST",
-            headers: objHeaders,
-            body: {
-                _token: csrfToken,
-                email: USER_EMAIL,
-                password: USER_PASSWORD,
-                remember: "1"
-            },
-            timeout: 30000
-        });
-        if (retryRes) {
-            postRes = retryRes;
-            syncCookieFromRes(postRes);
-            hasLoginForm = false;
-            postErr = "";
-            if (postRes.ok) {
-                try {
-                    var rDoc = postRes.html();
-                    postTitle = trimText(rDoc.select("title").text());
-                    hasLoginForm = !rDoc.select("form input[name=\"password\"]").isEmpty();
-                    var rErr = rDoc.select(".login-box-body .text-danger, form .text-danger, .text-danger, .alert-danger").first();
-                    if (rErr) postErr = trimText(rErr.text());
-                } catch (e) {}
-            }
-            console.log("Retry status=" + postRes.status + ", finalUrl=" + String(postRes.url || "") + ", hasLoginForm=" + hasLoginForm + (postErr ? (", err=" + postErr) : ""));
-        }
-    }
-
-    var landedOutsideLogin = (postRes.url && postRes.url.indexOf("/login") === -1) || (postRes.ok && !hasLoginForm);
     var headerOk = checkLoggedIn();
-    console.log("landedOutsideLogin=" + landedOutsideLogin + ", headerOk=" + headerOk);
-    if ((postRes.ok && landedOutsideLogin && !postErr) || headerOk) {
+    console.log("POST status=" + postRes.status + ", headerOk=" + headerOk + (postErr ? (", err=" + postErr) : ""));
+    if (headerOk) {
         setLoginCache();
         return { ok: true, message: "Đăng nhập thành công (" + USER_EMAIL + ")" };
     }
@@ -289,7 +338,7 @@ function ensureLogin(force) {
     clearLoginCache();
     return {
         ok: false,
-        message: postErr || ("Đăng nhập thất bại (HTTP " + postRes.status + ", hasLoginForm=" + hasLoginForm + ", cookies=" + getCookieNames() + ")")
+        message: postErr || ("Đăng nhập chưa lưu được phiên (HTTP " + postRes.status + ", cookies=" + getCookieNames() + ")")
     };
 }
 
