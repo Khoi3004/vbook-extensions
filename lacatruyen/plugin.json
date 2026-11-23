@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "name": "La Cà Truyện",
+    "author": "vBook",
+    "version": 1,
+    "source": "https://lacatruyen.email",
+    "description": "Đọc truyện chữ online trên La Cà Truyện (lacatruyen.email)",
+    "locale": "vi",
+    "regexp": "(https?://)?(www\\.)?lacatruyen\\.[a-z0-9.-]+/story/[^/]+/?",
+    "type": "novel",
+    "nsfw": false
+  },
+  "script": {
+    "home": "home.js",
+    "explore": "explore.js",
+    "genre": "genre.js",
+    "search": "search.js",
+    "detail": "detail.js",
+    "page": "page.js",
+    "toc": "toc.js",
+    "chap": "chap.js"
+  },
+  "config": {
+    "DOMAIN": {
+      "title": "Domain (đổi tại đây khi web đổi tên miền)",
+      "default": "https://lacatruyen.email",
+      "mode": "input",
+      "format": "text"
+    },
+    "TOKEN": {
+      "title": "Cookie Token (tùy chọn để đọc full chương)",
+      "default": "",
+      "mode": "input",
+      "format": "text"
+    },
+    "thread_num": 2,
+    "delay": 300
+  }
+}
