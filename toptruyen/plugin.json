@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "name": "TopTruyen",
+    "author": "vBook",
+    "version": 1,
+    "source": "https://www.toptruyenzone15.com",
+    "description": "Đọc truyện tranh online trên TopTruyen (hỗ trợ đổi domain & tự động đăng nhập)",
+    "locale": "vi",
+    "regexp": "(https?://)?(www\\.)?toptruyen[a-z0-9.-]*/truyen-tranh/[^/]+/\\d+/?",
+    "type": "comic",
+    "nsfw": false
+  },
+  "script": {
+    "home": "home.js",
+    "explore": "explore.js",
+    "genre": "genre.js",
+    "search": "search.js",
+    "detail": "detail.js",
+    "toc": "toc.js",
+    "chap": "chap.js"
+  },
+  "config": {
+    "DOMAIN": {
+      "title": "Domain (đổi tại đây khi web đổi tên miền)",
+      "default": "https://www.toptruyenzone15.com",
+      "mode": "input",
+      "format": "text"
+    },
+    "EMAIL": {
+      "title": "Email đăng nhập (tùy chọn)",
+      "default": "",
+      "mode": "input",
+      "format": "text"
+    },
+    "PASSWORD": {
+      "title": "Mật khẩu đăng nhập (tùy chọn)",
+      "default": "",
+      "mode": "input",
+      "format": "text"
+    },
+    "AUTO_LOGIN": {
+      "title": "Tự động đăng nhập",
+      "subtitle": "Tự đăng nhập bằng Email & Mật khẩu khi phiên hết hạn hoặc đổi domain",
+      "default": "true",
+      "mode": "toggle"
+    },
+    "thread_num": 2,
+    "delay": 300
+  },
+  "actions": {
+    "login": {
+      "name": "Đăng nhập / Kiểm tra tài khoản",
+      "description": "Đăng nhập ngay bằng Email & Mật khẩu đã nhập ở cài đặt",
+      "script": "login.js"
+    }
+  }
+}
