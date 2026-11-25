@@ -343,7 +343,7 @@ function ensureLogin(force) {
 }
 
 function fetchDoc(url, requireAuth) {
-    if (IS_AUTO_LOGIN && USER_EMAIL && USER_PASSWORD) {
+    if (requireAuth && IS_AUTO_LOGIN && USER_EMAIL && USER_PASSWORD) {
         ensureLogin(false);
     }
 

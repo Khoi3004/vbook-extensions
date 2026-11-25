@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "name": "Cô Be Phim",
+    "author": "Khoi3004",
+    "version": 1,
+    "source": "https://cobephim.wiki",
+    "description": "Xem phim HD Vietsub, Thuyết Minh, Song Ngữ trên Cô Be Phim (tự cập nhật domain từ cobelink.xyz)",
+    "locale": "vi",
+    "regexp": "(https?://)?(www\\.)?cobephim\\.[a-z0-9.-]+/(phim|xem-phim)/[^/?#]+/?",
+    "type": "video",
+    "nsfw": false
+  },
+  "script": {
+    "home": "home.js",
+    "explore": "explore.js",
+    "genre": "genre.js",
+    "search": "search.js",
+    "detail": "detail.js",
+    "toc": "toc.js",
+    "chap": "chap.js",
+    "track": "track.js"
+  },
+  "config": {
+    "DOMAIN": {
+      "title": "Domain (tự sửa hoặc để tự động)",
+      "default": "https://cobephim.wiki",
+      "mode": "input",
+      "format": "text"
+    },
+    "AUTO_DOMAIN": {
+      "title": "Tự cập nhật tên miền từ cobelink.xyz",
+      "subtitle": "Tự lấy domain mới từ cobelink.xyz khi domain cũ lỗi hoặc định kỳ 12h",
+      "default": "true",
+      "mode": "toggle"
+    },
+    "DOMAIN_HUB": {
+      "title": "Trang lấy tên miền mới",
+      "default": "https://cobelink.xyz",
+      "mode": "input",
+      "format": "text"
+    },
+    "thread_num": 2,
+    "delay": 200
+  },
+  "actions": {
+    "sync_domain": {
+      "name": "Cập nhật tên miền mới từ cobelink.xyz",
+      "description": "Kiểm tra cobelink.xyz ngay và lưu tên miền + API mới nhất",
+      "script": "sync_domain.js"
+    }
+  }
+}
